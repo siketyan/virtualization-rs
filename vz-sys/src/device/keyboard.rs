@@ -1,6 +1,6 @@
 //! keyboard module
 
-use crate::base::Id;
+use crate::foundation::Id;
 
 use objc::rc::StrongPtr;
 use objc::{class, msg_send, sel, sel_impl};

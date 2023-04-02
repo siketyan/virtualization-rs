@@ -1,6 +1,6 @@
 //! storage device module
 
-use crate::base::{Id, NSError, NSInteger, NSURL};
+use crate::foundation::{Id, NSError, NSInteger, NSURL};
 
 use objc::runtime::BOOL;
 use objc::{class, msg_send, sel, sel_impl};

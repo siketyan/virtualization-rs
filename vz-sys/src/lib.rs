@@ -11,5 +11,6 @@
 extern crate block;
 extern crate objc;
 
-pub mod base;
-pub mod virtualization;
+pub mod boot_loader;
+pub mod device;
+pub mod foundation;

@@ -1,5 +1,5 @@
 //! boot loader module
-use crate::base::{Id, NSError, NSString, NSUInteger, NSURL};
+use crate::foundation::{Id, NSError, NSString, NSUInteger, NSURL};
 
 use objc::rc::StrongPtr;
 use objc::{class, msg_send, sel, sel_impl};

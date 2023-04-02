@@ -1,6 +1,6 @@
 //! graphics device module
 
-use crate::base::{Id, NSArray, NSInteger};
+use crate::foundation::{Id, NSArray, NSInteger};
 
 use objc::rc::StrongPtr;
 use objc::{class, msg_send, sel, sel_impl};

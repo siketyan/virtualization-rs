@@ -1,6 +1,6 @@
 //! network device module
 
-use crate::base::{Id, NSString};
+use crate::foundation::{Id, NSString};
 
 use objc::rc::StrongPtr;
 use objc::{class, msg_send, sel, sel_impl};
