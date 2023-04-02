@@ -1,4 +1,5 @@
 #![allow(improper_ctypes)]
+#![allow(clippy::new_without_default)]
 
 //! virtualization-rs provides the API of the Apple [Virtualization.framework](https://developer.apple.com/documentation/virtualization?language=objc) in Rust language.
 //!

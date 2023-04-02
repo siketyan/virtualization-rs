@@ -37,7 +37,7 @@ impl<T> NSArray<T> {
                 msg_send![class!(NSArray), arrayWithObjects:objects.as_slice().as_ptr() count:objects.len()],
             );
             NSArray {
-                p: p,
+                p,
                 _phantom: PhantomData,
             }
         }
@@ -71,6 +71,10 @@ impl NSString {
 
     pub fn len(&self) -> usize {
         unsafe { msg_send![*self.0, lengthOfBytesUsingEncoding: UTF8_ENCODING] }
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
     }
 
     pub fn as_str(&self) -> &str {

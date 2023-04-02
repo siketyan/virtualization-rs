@@ -302,9 +302,9 @@ impl VZVirtualMachine {
         }
     }
 
-    pub unsafe fn request_stop_with_error(&mut self) -> Result<bool, NSError> {
-        let error = NSError(StrongPtr::new(0 as Id));
-        let ret: BOOL = msg_send![*self.0, requestStopWithError:*error.0];
+    pub fn request_stop_with_error(&mut self) -> Result<bool, NSError> {
+        let error = NSError::nil();
+        let ret: BOOL = unsafe { msg_send![*self.0, requestStopWithError:*error.0] };
         if error.code() != 0 {
             Err(error)
         } else {
@@ -319,8 +319,8 @@ impl VZVirtualMachine {
         }
     }
 
-    pub unsafe fn state(&self) -> VZVirtualMachineState {
-        let n: isize = msg_send![*self.0, state];
+    pub fn state(&self) -> VZVirtualMachineState {
+        let n: isize = unsafe { msg_send![*self.0, state] };
         match n {
             0 => VZVirtualMachineState::VZVirtualMachineStateStopped,
             1 => VZVirtualMachineState::VZVirtualMachineStateRunning,
@@ -333,6 +333,8 @@ impl VZVirtualMachine {
         }
     }
 
+    /// # Safety
+    /// This is not managed by [`StrongPtr`].
     pub unsafe fn id(&self) -> Id {
         *self.0
     }
