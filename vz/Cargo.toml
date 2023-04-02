@@ -1,0 +1,13 @@
+[package]
+name = "vz"
+description = "High-level API of the Rust binding for Virtualization.framework."
+version = "1.0.0-alpha.0"
+authors = ["Natsuki Ikeguchi <me@s6n.jp"]
+edition = "2021"
+license = "MIT"
+repository = "https://github.com/siketyan/vz-rs"
+readme = "../README.md"
+keywords = ["macOS", "Virtualization", "VM"]
+
+[dependencies]
+vz-sys = { path = "../vz-sys", version = "=1.0.0-alpha.0" }

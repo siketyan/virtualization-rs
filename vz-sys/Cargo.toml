@@ -1,0 +1,19 @@
+[package]
+name = "vz-sys"
+version = "1.0.0-alpha.0"
+authors = ["Natsuki Ikeguchi <me@s6n.jp>"]
+edition = "2021"
+license = "MIT"
+description = "Low-level Rust binding for Virtualization.framework."
+repository = "https://github.com/siketyan/vz-rs"
+readme = "../README.md"
+keywords = ["macOS", "Virtualization", "VM"]
+categories = ["api-bindings"]
+
+[dependencies]
+libc = "0.2.82"
+objc = "0.2.7"
+block = "0.1.6"
+
+[dev-dependencies]
+structopt = "0.3.21"
