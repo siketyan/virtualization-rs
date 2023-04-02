@@ -1,27 +1,28 @@
 //! virtual machine module
 
-use crate::{
-    base::{Id, NSArray, NSError},
-    virtualization::boot_loader::VZBootLoader,
-    virtualization::entropy_device::VZEntropyDeviceConfiguration,
-    virtualization::graphics_device::VZGraphicsDeviceConfiguration,
-    virtualization::keyboard::VZKeyboardConfiguration,
-    virtualization::memory_device::VZMemoryBalloonDeviceConfiguration,
-    virtualization::network_device::VZNetworkDeviceConfiguration,
-    virtualization::pointing_device::VZPointingDeviceConfiguration,
-    virtualization::serial_port::VZSerialPortConfiguration,
-    virtualization::socket_device::VZSocketDeviceConfiguration,
-    virtualization::storage_device::VZStorageDeviceConfiguration,
-};
-
 use block::Block;
 use objc::runtime::BOOL;
 use objc::{class, msg_send, sel, sel_impl};
 use objc::{rc::StrongPtr, runtime::YES};
 
+use crate::boot_loader::VZBootLoader;
+use crate::device::entropy::VZEntropyDeviceConfiguration;
+use crate::device::graphics::VZGraphicsDeviceConfiguration;
+use crate::device::keyboard::VZKeyboardConfiguration;
+use crate::device::memory::VZMemoryBalloonDeviceConfiguration;
+use crate::device::network::VZNetworkDeviceConfiguration;
+use crate::device::pointing::VZPointingDeviceConfiguration;
+use crate::device::serial_port::VZSerialPortConfiguration;
+use crate::device::socket::VZSocketDeviceConfiguration;
+use crate::device::storage::VZStorageDeviceConfiguration;
+use crate::foundation::{Id, NSArray, NSError};
+use crate::objc::{alloc, constructor, instancetype};
+
 /// builder for VZVirtualMachineConfiguration
+///
 /// # Examples
 /// ```rust
+/// # use vz_sys::vm::*;
 /// let conf = VZVirtualMachineConfigurationBuilder::new()
 ///     .boot_loader(boot_loader)
 ///     .cpu_count(cpu_count)
@@ -133,14 +134,9 @@ impl VZVirtualMachineConfigurationBuilder {
 /// configure of virtual machine
 pub struct VZVirtualMachineConfiguration(StrongPtr);
 
-impl VZVirtualMachineConfiguration {
-    fn new() -> VZVirtualMachineConfiguration {
-        unsafe {
-            let obj = StrongPtr::new(msg_send![class!(VZVirtualMachineConfiguration), new]);
-            VZVirtualMachineConfiguration(obj)
-        }
-    }
+constructor!(VZVirtualMachineConfiguration);
 
+impl VZVirtualMachineConfiguration {
     fn set_boot_loader<T: VZBootLoader>(&mut self, boot_loader: T) {
         unsafe {
             let _: () = msg_send![*self.0, setBootLoader: boot_loader.id()];
@@ -280,20 +276,19 @@ pub enum VZVirtualMachineState {
 }
 
 impl VZVirtualMachine {
-    pub fn new(conf: VZVirtualMachineConfiguration, queue: Id) -> VZVirtualMachine {
-        unsafe {
-            let i: Id = msg_send![class!(VZVirtualMachine), alloc];
-            let p = StrongPtr::new(msg_send![i, initWithConfiguration:*conf.0 queue:queue]);
-            VZVirtualMachine(p)
-        }
+    pub fn new(conf: VZVirtualMachineConfiguration, queue: Id) -> Self {
+        Self(instancetype![
+            alloc![VZVirtualMachine],
+            initWithConfiguration: *conf.0
+            queue: queue
+        ])
     }
 
-    pub fn new_without_queue(conf: VZVirtualMachineConfiguration) -> VZVirtualMachine {
-        unsafe {
-            let i: Id = msg_send![class!(VZVirtualMachine), alloc];
-            let p = StrongPtr::new(msg_send![i, initWithConfiguration:*conf.0]);
-            VZVirtualMachine(p)
-        }
+    pub fn new_without_queue(conf: VZVirtualMachineConfiguration) -> Self {
+        Self(instancetype![
+            alloc![VZVirtualMachine],
+            initWithConfiguration: *conf.0
+        ])
     }
 
     pub fn start_with_completion_handler(&mut self, completion_handler: &Block<(Id,), ()>) {
@@ -305,10 +300,9 @@ impl VZVirtualMachine {
     pub fn request_stop_with_error(&mut self) -> Result<bool, NSError> {
         let error = NSError::nil();
         let ret: BOOL = unsafe { msg_send![*self.0, requestStopWithError:*error.0] };
-        if error.code() != 0 {
-            Err(error)
-        } else {
-            Ok(ret)
+        match error.code() {
+            0 => Ok(ret),
+            _ => Err(error),
         }
     }
 

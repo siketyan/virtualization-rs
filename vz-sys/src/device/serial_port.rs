@@ -1,9 +1,10 @@
 //! serial port module
 
-use crate::foundation::{Id, NSFileHandle};
-
 use objc::rc::StrongPtr;
 use objc::{class, msg_send, sel, sel_impl};
+
+use crate::foundation::{Id, NSFileHandle};
+use crate::objc::{alloc, instancetype, new, protocol};
 
 /// common configure for serial port attachment
 pub trait VZSerialPortAttachment {
@@ -13,7 +14,8 @@ pub trait VZSerialPortAttachment {
 /// builder for VZFileHandleSerialPortAttachment
 /// # Examples
 /// ```rust
-/// let attachement = VZFileHandleSerialPortAttachmentBuilder::new()
+/// # use vz_sys::device::serial_port::*;
+/// let attachment = VZFileHandleSerialPortAttachmentBuilder::new()
 ///     .file_handle_for_reading(file_handle_for_reading)
 ///     .file_handle_for_writing(file_handle_for_writing)
 ///     .build();
@@ -72,12 +74,12 @@ impl VZFileHandleSerialPortAttachment {
     unsafe fn new(
         file_handle_for_reading: NSFileHandle,
         file_handle_for_writing: NSFileHandle,
-    ) -> VZFileHandleSerialPortAttachment {
-        let i: Id = msg_send![class!(VZFileHandleSerialPortAttachment), new];
-        let p = StrongPtr::new(
-            msg_send![i, initWithFileHandleForReading:*file_handle_for_reading.0 fileHandleForWriting:*file_handle_for_writing.0],
-        );
-        VZFileHandleSerialPortAttachment(p)
+    ) -> Self {
+        Self(instancetype![
+            alloc![VZFileHandleSerialPortAttachment],
+            initWithFileHandleForReading: *file_handle_for_reading.0
+            fileHandleForWriting: *file_handle_for_writing.0
+        ])
     }
 }
 
@@ -95,23 +97,17 @@ pub trait VZSerialPortConfiguration {
 /// configure of serial port through the Virtio interface
 pub struct VZVirtioConsoleDeviceSerialPortConfiguration(StrongPtr);
 
-impl VZVirtioConsoleDeviceSerialPortConfiguration {
-    pub fn new<T: VZSerialPortAttachment>(
-        attachement: T,
-    ) -> VZVirtioConsoleDeviceSerialPortConfiguration {
-        unsafe {
-            let p = StrongPtr::new(msg_send![
-                class!(VZVirtioConsoleDeviceSerialPortConfiguration),
-                new
-            ]);
-            let _: Id = msg_send![*p, setAttachment: attachement.id()];
-            VZVirtioConsoleDeviceSerialPortConfiguration(p)
-        }
-    }
-}
+protocol!(
+    VZSerialPortConfiguration,
+    VZVirtioConsoleDeviceSerialPortConfiguration
+);
 
-impl VZSerialPortConfiguration for VZVirtioConsoleDeviceSerialPortConfiguration {
-    fn id(&self) -> Id {
-        *self.0
+impl VZVirtioConsoleDeviceSerialPortConfiguration {
+    pub fn new<T: VZSerialPortAttachment>(attachment: T) -> Self {
+        unsafe {
+            let p = new![VZVirtioConsoleDeviceSerialPortConfiguration];
+            let _: Id = msg_send![*p, setAttachment: attachment.id()];
+            Self(p)
+        }
     }
 }

@@ -46,6 +46,10 @@ impl<T> NSArray<T> {
     pub fn count(&self) -> usize {
         unsafe { msg_send![*self.p, count] }
     }
+
+    pub(crate) unsafe fn id(&self) -> Id {
+        *self.p
+    }
 }
 
 impl<T: From<StrongPtr>> NSArray<T> {

@@ -1,8 +1,10 @@
 //! boot loader module
-use crate::foundation::{Id, NSError, NSString, NSUInteger, NSURL};
 
 use objc::rc::StrongPtr;
 use objc::{class, msg_send, sel, sel_impl};
+
+use crate::foundation::{Id, NSError, NSString, NSUInteger, NSURL};
+use crate::objc::{alloc, instancetype, new, protocol};
 
 /// common behaviors for booting
 pub trait VZBootLoader {
@@ -10,8 +12,10 @@ pub trait VZBootLoader {
 }
 
 /// builder for VZLinuxBootLoader
+///
 /// # Examples
 /// ```rust
+/// # use vz_sys::boot_loader::*;
 /// let boot_loader = VZLinuxBootLoaderBuilder::new()
 ///     .kernel_url(kernel_url)
 ///     .initial_ramdisk_url(initial_ramdisk_url)
@@ -87,20 +91,16 @@ impl VZLinuxBootLoaderBuilder<String, String, String> {
 pub struct VZLinuxBootLoader(StrongPtr);
 
 impl VZLinuxBootLoader {
-    unsafe fn new(
-        kernel_url: &str,
-        initial_ramdisk_url: &str,
-        command_line: &str,
-    ) -> VZLinuxBootLoader {
+    unsafe fn new(kernel_url: &str, initial_ramdisk_url: &str, command_line: &str) -> Self {
         let kernel_url_nsurl = NSURL::file_url_with_path(kernel_url, false).absolute_url();
         let initial_ramdisk_url_nsurl =
             NSURL::file_url_with_path(initial_ramdisk_url, false).absolute_url();
         let command_line_nsstring = NSString::new(command_line);
-        let p = StrongPtr::new(msg_send![class!(VZLinuxBootLoader), new]);
+        let p = new![VZLinuxBootLoader];
         let _: Id = msg_send![*p, setKernelURL: *kernel_url_nsurl.0];
         let _: Id = msg_send![*p, setInitialRamdiskURL: *initial_ramdisk_url_nsurl.0];
         let _: Id = msg_send![*p, setCommandLine: *command_line_nsstring.0];
-        VZLinuxBootLoader(p)
+        Self(p)
     }
 }
 
@@ -155,7 +155,7 @@ impl VZEFIVariableStore {
     /// options, and error-return variable.
     ///
     /// ```
-    /// # use virtualization_rs::virtualization::boot_loader::*;
+    /// # use vz_sys::boot_loader::*;
     /// let efi_variables = match VZEFIVariableStore::create(
     ///     "/path/to/efi/variables",
     ///     VZEFIVariableStoreInitializationOptions::new()
@@ -175,28 +175,26 @@ impl VZEFIVariableStore {
         let file_url = NSURL::url_with_string(file_url.into().as_str());
         let options = options.into_raw();
         let error = NSError::nil();
-        let i: Id = unsafe { msg_send![class!(VZEFIVariableStore), alloc] };
-        let p = unsafe {
-            StrongPtr::new(msg_send![
-                i,
-                initCreatingVariableStoreAtURL: file_url
-                options: options
-                error: &(*error.0)
-            ])
-        };
+        let p = instancetype![
+            alloc![VZEFIVariableStore],
+            initCreatingVariableStoreAtURL: file_url
+            options: options
+            error: &(*error.0)
+        ];
 
-        if error.code() != 0 {
-            Err(error)
-        } else {
-            Ok(Self(p))
+        match error.code() {
+            0 => Ok(Self(p)),
+            _ => Err(error),
         }
     }
 
     /// Initialize the variable store from the URL of an existing file.
     pub fn open<T: Into<String>>(file_url: T) -> Self {
         let file_url = NSURL::url_with_string(file_url.into().as_str());
-        let i: Id = unsafe { msg_send![class!(VZEFIVariableStore), alloc] };
-        Self(unsafe { StrongPtr::new(msg_send![i, initWithURL: file_url]) })
+        Self(instancetype![
+            alloc![VZEFIVariableStore],
+            initWithURL: file_url
+        ])
     }
 }
 
@@ -225,18 +223,14 @@ impl VZEFIBootLoaderBuilder {
 /// Extensible Firmware Interface (EFI) ROM.
 pub struct VZEFIBootLoader(StrongPtr);
 
+protocol!(VZBootLoader, VZEFIBootLoader);
+
 impl VZEFIBootLoader {
     unsafe fn new(variable_store: Option<VZEFIVariableStore>) -> Self {
-        let p = StrongPtr::new(msg_send![class!(VZEFIBootLoader), new]);
+        let p = new![VZEFIBootLoader];
         if let Some(v) = variable_store {
             let _: Id = msg_send![*p, setVariableStore: *v.0];
         }
         Self(p)
-    }
-}
-
-impl VZBootLoader for VZEFIBootLoader {
-    fn id(&self) -> Id {
-        *self.0
     }
 }

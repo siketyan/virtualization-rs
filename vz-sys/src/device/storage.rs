@@ -1,10 +1,11 @@
 //! storage device module
 
-use crate::foundation::{Id, NSError, NSInteger, NSURL};
-
 use objc::runtime::BOOL;
 use objc::{class, msg_send, sel, sel_impl};
 use objc::{rc::StrongPtr, runtime::NO, runtime::YES};
+
+use crate::foundation::{Id, NSError, NSInteger, NSURL};
+use crate::objc::{alloc, instancetype, protocol};
 
 /// common configure of storage device attachment
 pub trait VZStorageDeviceAttachment {
@@ -75,6 +76,8 @@ impl VZDiskImageSynchronizationMode {
 /// builder for VZDiskImageStorageDeviceAttachment
 /// # Examples
 /// ```rust
+/// # use std::fs::canonicalize;
+/// # use vz_sys::device::storage::*;
 /// let block_attachment = match VZDiskImageStorageDeviceAttachmentBuilder::new()
 ///     .path(canonicalize(&disk).unwrap().into_os_string().into_string().unwrap())
 ///     .build()
@@ -175,8 +178,12 @@ impl<Path, ReadOnly, CachingMode, SynchronizationMode>
 
 impl VZDiskImageStorageDeviceAttachmentBuilder<String, bool, (), ()> {
     pub fn build(self) -> Result<VZDiskImageStorageDeviceAttachment, NSError> {
-        let read_only = if self.read_only { YES } else { NO };
-        unsafe { VZDiskImageStorageDeviceAttachment::new(self.path.as_str(), read_only) }
+        unsafe {
+            VZDiskImageStorageDeviceAttachment::new(
+                self.path.as_str(),
+                if self.read_only { YES } else { NO },
+            )
+        }
     }
 }
 
@@ -189,11 +196,10 @@ impl
     >
 {
     pub fn build(self) -> Result<VZDiskImageStorageDeviceAttachment, NSError> {
-        let read_only = if self.read_only { YES } else { NO };
         unsafe {
             VZDiskImageStorageDeviceAttachment::new_with_mode(
                 self.path.as_str(),
-                read_only,
+                if self.read_only { YES } else { NO },
                 self.caching_mode.0,
                 self.synchronization_mode.0,
             )
@@ -209,16 +215,18 @@ impl VZDiskImageStorageDeviceAttachment {
         path: &str,
         read_only: BOOL,
     ) -> Result<VZDiskImageStorageDeviceAttachment, NSError> {
-        let i: Id = msg_send![class!(VZDiskImageStorageDeviceAttachment), alloc];
         let path_nsurl = NSURL::file_url_with_path(path, false);
         let error = NSError::nil();
-        let p = StrongPtr::new(
-            msg_send![i, initWithURL:*path_nsurl.0 readOnly:read_only error:&(*error.0)],
-        );
-        if error.code() != 0 {
-            Err(error)
-        } else {
-            Ok(VZDiskImageStorageDeviceAttachment(p))
+        let p = instancetype![
+            alloc![VZDiskImageStorageDeviceAttachment],
+            initWithURL: *path_nsurl.0
+            readOnly: read_only
+            error: &(*error.0)
+        ];
+
+        match error.code() {
+            0 => Ok(Self(p)),
+            _ => Err(error),
         }
     }
 
@@ -228,23 +236,21 @@ impl VZDiskImageStorageDeviceAttachment {
         read_only: BOOL,
         caching_mode: NSInteger,
         synchronization_mode: NSInteger,
-    ) -> Result<VZDiskImageStorageDeviceAttachment, NSError> {
-        let i: Id = msg_send![class!(VZDiskImageStorageDeviceAttachment), alloc];
+    ) -> Result<Self, NSError> {
         let path_nsurl = NSURL::file_url_with_path(path, false);
         let error = NSError::nil();
-        let p = StrongPtr::new(msg_send![
-            i,
+        let p = instancetype![
+            alloc![VZDiskImageStorageDeviceAttachment],
             initWithURL: *path_nsurl.0
             readOnly: read_only
             cachingMode: caching_mode
             synchronizationMode: synchronization_mode
             error: &(*error.0)
-        ]);
+        ];
 
-        if error.code() != 0 {
-            Err(error)
-        } else {
-            Ok(VZDiskImageStorageDeviceAttachment(p))
+        match error.code() {
+            0 => Ok(Self(p)),
+            _ => Err(error),
         }
     }
 }
@@ -263,6 +269,11 @@ pub trait VZStorageDeviceConfiguration {
 /// configure of storage device through the Virtio interface
 pub struct VZVirtioBlockDeviceConfiguration(StrongPtr);
 
+protocol!(
+    VZStorageDeviceConfiguration,
+    VZVirtioBlockDeviceConfiguration,
+);
+
 impl VZVirtioBlockDeviceConfiguration {
     pub fn new<T: VZStorageDeviceAttachment>(attachment: T) -> VZVirtioBlockDeviceConfiguration {
         unsafe {
@@ -273,28 +284,20 @@ impl VZVirtioBlockDeviceConfiguration {
     }
 }
 
-impl VZStorageDeviceConfiguration for VZVirtioBlockDeviceConfiguration {
-    fn id(&self) -> Id {
-        *self.0
-    }
-}
-
 /// The configuration object that represents a USB Mass storage device.
 pub struct VZUSBMassStorageDeviceConfiguration(StrongPtr);
+
+protocol!(
+    VZStorageDeviceConfiguration,
+    VZUSBMassStorageDeviceConfiguration,
+);
 
 impl VZUSBMassStorageDeviceConfiguration {
     /// Creates a new storage device configuration with the specified attachment.
     pub fn new<T: VZStorageDeviceAttachment>(attachment: T) -> Self {
-        unsafe {
-            let i: Id = msg_send![class!(VZUSBMassStorageDeviceConfiguration), alloc];
-            let p = StrongPtr::new(msg_send![i, initWithAttachment:attachment.id()]);
-            Self(p)
-        }
-    }
-}
-
-impl VZStorageDeviceConfiguration for VZUSBMassStorageDeviceConfiguration {
-    fn id(&self) -> Id {
-        *self.0
+        Self(instancetype![
+            alloc![VZUSBMassStorageDeviceConfiguration],
+            initWithAttachment: attachment.id()
+        ])
     }
 }

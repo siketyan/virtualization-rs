@@ -1,9 +1,9 @@
 //! keyboard module
 
 use crate::foundation::Id;
+use crate::objc::{constructor, protocol};
 
 use objc::rc::StrongPtr;
-use objc::{class, msg_send, sel, sel_impl};
 
 /// The base class for a configuring a keyboard.
 pub trait VZKeyboardConfiguration {
@@ -13,14 +13,5 @@ pub trait VZKeyboardConfiguration {
 /// A device that defines the configuration for a USB keyboard.
 pub struct VZUSBKeyboardConfiguration(StrongPtr);
 
-impl VZUSBKeyboardConfiguration {
-    pub fn new() -> Self {
-        Self(unsafe { StrongPtr::new(msg_send![class!(VZUSBKeyboardConfiguration), new]) })
-    }
-}
-
-impl VZKeyboardConfiguration for VZUSBKeyboardConfiguration {
-    fn id(&self) -> Id {
-        *self.0
-    }
-}
+constructor!(VZUSBKeyboardConfiguration);
+protocol!(VZKeyboardConfiguration, VZUSBKeyboardConfiguration);

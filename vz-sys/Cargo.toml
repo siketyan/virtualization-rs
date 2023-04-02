@@ -11,6 +11,7 @@ keywords = ["macOS", "Virtualization", "VM"]
 categories = ["api-bindings"]
 
 [dependencies]
+concat-idents = "1.1"
 libc = "0.2.82"
 objc = "0.2.7"
 block = "0.1.6"

@@ -8,9 +8,11 @@
 //!
 //! The example is inspired from [SimpleVM](https://github.com/KhaosT/SimpleVM).
 
-extern crate block;
-extern crate objc;
+mod objc;
 
 pub mod boot_loader;
 pub mod device;
 pub mod foundation;
+pub mod vm;
+
+pub use concat_idents::concat_idents;

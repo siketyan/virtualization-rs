@@ -2,6 +2,7 @@
 
 use crate::foundation::Id;
 
+use crate::objc::{constructor, protocol};
 use objc::rc::StrongPtr;
 use objc::{class, msg_send, sel, sel_impl};
 
@@ -18,36 +19,22 @@ pub trait VZPointingDeviceConfiguration {
 /// [`VZMacTrackpadConfiguration`] and a [`VZUSBScreenCoordinatePointingDeviceConfiguration`] object.
 pub struct VZMacTrackpadConfiguration(StrongPtr);
 
-impl VZMacTrackpadConfiguration {
+constructor!(
     /// Creates a new Mac trackpad configuration.
-    pub fn new() -> Self {
-        Self(unsafe { StrongPtr::new(msg_send![class!(VZMacTrackpadConfiguration), new]) })
-    }
-}
+    VZMacTrackpadConfiguration
+);
 
-impl VZPointingDeviceConfiguration for VZMacTrackpadConfiguration {
-    fn id(&self) -> Id {
-        *self.0
-    }
-}
+protocol!(VZPointingDeviceConfiguration, VZMacTrackpadConfiguration);
 
 /// An object that defines the configuration for a USB pointing device that reports absolute coordinates.
 pub struct VZUSBScreenCoordinatePointingDeviceConfiguration(StrongPtr);
 
-impl VZUSBScreenCoordinatePointingDeviceConfiguration {
+constructor!(
     /// Creates a new pointing device.
-    pub fn new() -> Self {
-        Self(unsafe {
-            StrongPtr::new(msg_send![
-                class!(VZUSBScreenCoordinatePointingDeviceConfiguration),
-                new
-            ])
-        })
-    }
-}
+    VZUSBScreenCoordinatePointingDeviceConfiguration
+);
 
-impl VZPointingDeviceConfiguration for VZUSBScreenCoordinatePointingDeviceConfiguration {
-    fn id(&self) -> Id {
-        *self.0
-    }
-}
+protocol!(
+    VZPointingDeviceConfiguration,
+    VZUSBScreenCoordinatePointingDeviceConfiguration,
+);
